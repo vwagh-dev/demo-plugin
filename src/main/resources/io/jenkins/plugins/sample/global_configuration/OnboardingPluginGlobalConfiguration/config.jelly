@@ -1,0 +1,11 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <f:section title="Onboarding Plugin">
+        <f:entry title="${%Name}" field="name">
+            <f:textbox checkMethod="post" />
+        </f:entry>
+        <f:entry title="${%Description}" field="description">
+            <f:textarea checkMethod="post" />
+        </f:entry>
+    </f:section>
+</j:jelly>
