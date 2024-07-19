@@ -6,11 +6,20 @@ import hudson.util.Secret;
 import jenkins.model.GlobalConfiguration;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.verb.POST;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.Base64;
 
 
 @Extension
 @Symbol("OnboardingPlugin")
 public class OnboardingPluginGlobalConfiguration extends GlobalConfiguration {
+
     private String name;
     private String description;
     private String url;
@@ -77,5 +86,23 @@ public class OnboardingPluginGlobalConfiguration extends GlobalConfiguration {
     public FormValidation doCheckPwd(@QueryParameter String pwd) {
         System.out.println("Check file system pwd:::::::: " + pwd);
         return FormValidation.ok();
+    }
+
+    @POST
+    public FormValidation doTestConnection(@QueryParameter String url, @QueryParameter String username, @QueryParameter Secret password) throws IOException, InterruptedException {
+        String credentials = String.join(":", username, password.getPlainText());
+        String headerValue = "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes());
+        var client = HttpClient.newHttpClient();
+
+
+        var request = HttpRequest.newBuilder().uri(URI.create(url))
+                .header("Authorization", headerValue)
+                .GET().build();
+
+        var responseFuture = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (responseFuture.statusCode() != 200) {
+            return FormValidation.error("Connection Failed: Provided configuration details are not correct. Response Code: "+ responseFuture.statusCode());
+        }
+        return FormValidation.ok("<>Connection Success!!! ");
     }
 }
