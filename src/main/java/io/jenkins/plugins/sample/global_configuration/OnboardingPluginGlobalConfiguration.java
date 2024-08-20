@@ -1,10 +1,19 @@
 package io.jenkins.plugins.sample.global_configuration;
 
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import hudson.Extension;
+import hudson.model.Item;
+import hudson.security.ACL;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import hudson.util.Secret;
 import jenkins.model.GlobalConfiguration;
 import org.jenkinsci.Symbol;
+import org.jenkinsci.plugins.plaincredentials.StringCredentials;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.verb.POST;
 
@@ -14,6 +23,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Base64;
+import java.util.List;
+import java.util.Optional;
 
 
 @Extension
@@ -94,15 +105,63 @@ public class OnboardingPluginGlobalConfiguration extends GlobalConfiguration {
         String headerValue = "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes());
         var client = HttpClient.newHttpClient();
 
-
         var request = HttpRequest.newBuilder().uri(URI.create(url))
                 .header("Authorization", headerValue)
                 .GET().build();
 
         var responseFuture = client.send(request, HttpResponse.BodyHandlers.ofString());
         if (responseFuture.statusCode() != 200) {
-            return FormValidation.error("Connection Failed: Provided configuration details are not correct. Response Code: "+ responseFuture.statusCode());
+            return FormValidation.error("Connection Failed: Provided configuration details are not correct. Response Code: " + responseFuture.statusCode());
         }
         return FormValidation.ok("<>Connection Success!!! ");
+    }
+
+    /**
+     * Using credentials plugin i.e SecretText
+     *
+     */
+    @POST
+    public FormValidation doTestPayload(@AncestorInPath Item item, @QueryParameter String url, @QueryParameter String username,
+                                         @QueryParameter String credentialsId) throws IOException, InterruptedException {
+        DomainRequirement domainRequirement = new DomainRequirement();
+        List<StandardCredentials> credentials =
+                CredentialsProvider.lookupCredentials(StandardCredentials.class, item, ACL.SYSTEM, domainRequirement);
+        Optional<StringCredentials> optStandardCredentials = credentials.stream().filter(standardCredentials ->
+                        standardCredentials instanceof StringCredentials && standardCredentials.getId().matches(credentialsId))
+                .map(standardCredentials -> (StringCredentials) standardCredentials)
+                .findFirst();
+        if (optStandardCredentials.isPresent()) {
+            Secret password = optStandardCredentials.get().getSecret();
+            String headerValue = "Basic "+ username+":"+ password.getEncryptedValue();
+            var client = HttpClient.newHttpClient();
+            //https://vshal.free.beeceptor.com
+            var request = HttpRequest.newBuilder().uri(URI.create(url))
+                    .header("Authorization", headerValue)
+                    .POST(HttpRequest.BodyPublishers.ofString(optStandardCredentials.get().getSecret().getPlainText())).build();
+            var responseFuture = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (responseFuture.statusCode() != 200) {
+                return FormValidation.error("Payload test Failed: Provided configuration details are not correct. Response Code: " + responseFuture.statusCode());
+            }
+        }
+
+        return FormValidation.ok("Test connection successful");
+    }
+
+    //Fills the dropdown list when any credentials get added.
+    @POST
+    public ListBoxModel doFillCredentialsIdItems(
+            @AncestorInPath Item item, @QueryParameter String credentialsId,
+            @QueryParameter String url) {
+        StandardListBoxModel result = new StandardListBoxModel();
+        DomainRequirement domainRequirement = new DomainRequirement();
+        List<StandardCredentials> credentials =
+                CredentialsProvider.lookupCredentials(StandardCredentials.class, item, ACL.SYSTEM, domainRequirement);
+
+        for (StandardCredentials c : credentials) {
+            if (c instanceof StringCredentials) {
+                result.add(c.getId(), c.getId());
+            }
+        }
+        return result.includeCurrentValue(credentialsId); // (5)
     }
 }
