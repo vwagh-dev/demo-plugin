@@ -11,10 +11,13 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import hudson.util.Secret;
 import jenkins.model.GlobalConfiguration;
+import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.kohsuke.stapler.AncestorInPath;
+import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.verb.POST;
 
 import java.io.IOException;
@@ -22,9 +25,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Base64;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 
 @Extension
@@ -36,6 +37,15 @@ public class OnboardingPluginGlobalConfiguration extends GlobalConfiguration {
     private String url;
     private String username;
     private Secret password;
+
+    private List<Category> categories;
+
+    public OnboardingPluginGlobalConfiguration(){
+        load();
+        if (categories == null) {
+            categories = new ArrayList<>();
+        }
+    }
 
     public String getName() {
         return name;
@@ -78,6 +88,15 @@ public class OnboardingPluginGlobalConfiguration extends GlobalConfiguration {
         System.out.println("Password: " + password);
     }
 
+    public void setCategories(List<Category> categories) {
+        this.categories = categories;
+        save();
+    }
+
+    public List<Category> getCategories() {
+        return categories;
+    }
+
     public FormValidation doCheckName(@QueryParameter String name) {
         String regex = "^[a-zA-Z ]+$";
         if (!name.matches(regex)) {
@@ -114,6 +133,48 @@ public class OnboardingPluginGlobalConfiguration extends GlobalConfiguration {
             return FormValidation.error("Connection Failed: Provided configuration details are not correct. Response Code: " + responseFuture.statusCode());
         }
         return FormValidation.ok("<>Connection Success!!! ");
+    }
+
+    @Override
+    public boolean configure(StaplerRequest req, JSONObject json) throws FormException {
+        req.bindJSON(this, json);
+        List<Category> submittedCategories = req.bindJSONToList(Category.class, json.get("categories"));
+
+        // Generate UUID for new categories
+        for (Category category : submittedCategories) {
+            if (category.getUuid() == null || category.getUuid().isEmpty()) {
+                category.setUuid(UUID.randomUUID().toString());
+            }
+        }
+        setCategories(submittedCategories);
+        save();
+        return true;
+    }
+
+    public static class Category {
+        private String name;
+        private String uuid;
+        @DataBoundConstructor
+        public Category(String name) {
+            this.name = name;
+            this.uuid = UUID.randomUUID().toString();
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getUuid() {
+            return uuid;
+        }
+
+        public void setUuid(String uuid) {
+            this.uuid = uuid;
+        }
     }
 
     /**

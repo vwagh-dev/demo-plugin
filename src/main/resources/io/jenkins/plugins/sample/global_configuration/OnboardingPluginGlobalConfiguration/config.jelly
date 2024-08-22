@@ -10,6 +10,16 @@
         <f:entry title="${%Description}" field="description">
             <f:textarea   checkMethod="post" />
         </f:entry>
+        <f:repeatable var="category" name="categories">
+            <f:entry title="UUID" field="uuid" >
+                <f:textbox readonly="true"/>
+            </f:entry>
+
+            <!-- Category Name (Editable) -->
+            <f:entry title="Category Name" field="category.name">
+                <f:textbox />
+            </f:entry>
+        </f:repeatable>
     </f:section>
     <f:block>
         <table>
