@@ -79,6 +79,10 @@ public class OnboardingPluginGlobalConfiguration extends GlobalConfiguration {
         this.username = username;
     }
 
+    public static OnboardingPluginGlobalConfiguration get() {
+        return GlobalConfiguration.all().get(OnboardingPluginGlobalConfiguration.class);
+    }
+
     public Secret getPassword() {
         return password;
     }

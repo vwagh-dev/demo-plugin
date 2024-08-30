@@ -11,7 +11,7 @@
             <f:textarea   checkMethod="post" />
         </f:entry>
         <f:repeatable var="category" name="categories">
-            <f:entry title="UUID" field="uuid" >
+            <f:entry title="UUID" field="category.uuid" >
                 <f:textbox readonly="true"/>
             </f:entry>
 
