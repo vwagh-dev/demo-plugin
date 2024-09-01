@@ -11,47 +11,82 @@ depends on previous steps i.e. https://engineering.beescloud.com/docs/engineerin
    New Item -> Select Pipeline -> Goto pipeline section & select the 'Pipeline script' option & wrote the below code in the script section.
    ```
    pipeline {
-        agent any
-    
-        environment{
-            userInput = null
-        }
-    
-        stages {
-            stage('Category Selection') {
-                steps {
-    
-                    script {
-    
-                        def dynamicChoices = []
-    
-                        // Extracting serializable data from non-serializable object
-                        def myConfig = jenkins.model.GlobalConfiguration.all().get(io.jenkins.plugins.sample.global_configuration.OnboardingPluginGlobalConfiguration.class)
-                        //First try to read the categories
-                        def categoryNames = myConfig.getCategories().collect { it.name.toString() }
-    
-                        dynamicChoices.addAll(categoryNames)
-    
-                        println "Preparing dynamic choice list: ${categoryNames}"
-                        myConfig = null
-                        userInput = input message: 'Please select an Onboarding Task category', ok: 'Proceed',
-                                              parameters: [choice(name: 'CATEGORY', choices: dynamicChoices.join('\n'), description: 'Select the onboarding category')]
-    
-                        echo "User selected category: ${userInput}"
-    
-                    }
-                }
-            }
-    
-            stage('Perform Onboarding Task') {
-                steps {
-                    script {
-                        echo "Performing task for selected category: ${userInput}"
-                    }
-                }
-            }
-        }
-    }
+       agent any
+       
+       environment{
+           userInput = null
+           GLOBAL_FILE_PATH = 'build_data.txt'
+       }
+      
+       stages {
+           stage('Category Selection') {
+               steps {
+                   
+                   script {
+                       
+                       def dynamicChoices = []
+                   
+                       // Extracting serializable data from non-serializable object
+                       def myConfig = jenkins.model.GlobalConfiguration.all().get(io.jenkins.plugins.sample.global_configuration.OnboardingPluginGlobalConfiguration.class) 
+                       //First try to read the categories
+                       def categoryNames = myConfig.getCategories().collect { it.name.toString() }
+                       
+                       dynamicChoices.addAll(categoryNames)
+                       
+                       println "Preparing dynamic choice list: ${categoryNames}"
+                       myConfig = null
+                       userInput = input message: 'Please select an Onboarding Task category', ok: 'Proceed',
+                                             parameters: [choice(name: 'CATEGORY', choices: dynamicChoices.join('\n'), description: 'Select the onboarding category')]
+   
+                       echo "User selected category: ${userInput}"
+                       
+                   }
+               }
+           }
+   
+           stage('Perform Onboarding Task') {
+               steps {
+                   script {
+                       def selectedCategory = userInput
+                       echo "Performing task for selected category: ${userInput}, selectedCategory: ${selectedCategory}"
+                       // Update global file with the latest build data
+                       updateGlobalFile(selectedCategory)
+   
+                   }
+               }
+           }
+       }
+   }
+   
+   
+   // Function to update global file with the latest build data
+   def updateGlobalFile(String selectedCategory) {
+      def globalFile = new File(env.GLOBAL_FILE_PATH)
+      def buildData = "Build #${env.BUILD_NUMBER}, Category: ${selectedCategory}"
+   
+       // Create the file if it doesn't exist
+       if (!globalFile.exists()) {
+           globalFile.createNewFile()
+       }
+   
+       // Read existing file content
+       def lines = globalFile.readLines()
+   
+       // Add the latest build data at the beginning
+       lines = [buildData] + lines
+   
+       // Keep only the latest 5 builds
+       if (lines.size() > 5) {
+           lines = lines.take(5)
+       }
+   
+       // Write the updated list back to the file
+       globalFile.text = lines.join('\n')
+   
+       echo "Global file updated with latest build data"
+   }
+   
+
    ```
 2. Run the pipeline
 
