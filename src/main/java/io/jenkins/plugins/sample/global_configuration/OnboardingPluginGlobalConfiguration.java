@@ -93,7 +93,11 @@ public class OnboardingPluginGlobalConfiguration extends GlobalConfiguration {
     }
 
     public void setCategories(List<Category> categories) {
-        this.categories = categories;
+        if(null == this.categories) {
+            this.categories = categories;
+        }else{
+            this.categories.addAll(categories);
+        }
         save();
     }
 
@@ -145,13 +149,14 @@ public class OnboardingPluginGlobalConfiguration extends GlobalConfiguration {
         List<Category> submittedCategories = req.bindJSONToList(Category.class, json.get("categories"));
 
         // Generate UUID for new categories
-        for (Category category : submittedCategories) {
+        //I think below snippet is not required.
+        /*for (Category category : submittedCategories) {
             if (category.getUuid() == null || category.getUuid().isEmpty()) {
                 category.setUuid(UUID.randomUUID().toString());
             }
         }
         setCategories(submittedCategories);
-        save();
+        save();*/
         return true;
     }
 
