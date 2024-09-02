@@ -20,12 +20,16 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.verb.POST;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 @Extension
@@ -34,6 +38,7 @@ public class OnboardingPluginGlobalConfiguration extends GlobalConfiguration {
 
     private String name;
     private String description;
+    private String displayName;
     private String url;
     private String username;
     private Secret password;
@@ -61,6 +66,11 @@ public class OnboardingPluginGlobalConfiguration extends GlobalConfiguration {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getDisplayName() {
+        displayName = readJobNameFromFile();
+        return displayName;
     }
 
     public String getUrl() {
@@ -233,5 +243,22 @@ public class OnboardingPluginGlobalConfiguration extends GlobalConfiguration {
             }
         }
         return result.includeCurrentValue(credentialsId); // (5)
+    }
+
+    private String readJobNameFromFile() {
+        String jobName = null;
+        try (BufferedReader br = new BufferedReader(new FileReader("build_data.txt"))) {
+            String firstLine = br.readLine();
+            if (firstLine != null) {
+                Pattern pattern = Pattern.compile("JobName: ([^,]+)");
+                Matcher matcher = pattern.matcher(firstLine);
+                if (matcher.find()) {
+                    jobName = matcher.group(1);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return jobName;
     }
 }
