@@ -67,7 +67,7 @@ depends on previous steps i.e. https://engineering.beescloud.com/docs/engineerin
       def currentBuildLink = getCurrentBuildLink()
       echo "currentBuildLink link is : ${currentBuildLink}"
    
-       def buildData = "Build #${env.BUILD_NUMBER}, Category: ${selectedCategory}, Link: ${currentBuildLink}"
+       def buildData = "Build #${env.BUILD_NUMBER}, Category: ${selectedCategory}, JobName: ${env.JOB_NAME} , Link: ${currentBuildLink}"
    
        // Create the file if it doesn't exist
        if (!globalFile.exists()) {
