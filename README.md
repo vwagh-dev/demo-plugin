@@ -57,12 +57,17 @@ depends on previous steps i.e. https://engineering.beescloud.com/docs/engineerin
            }
        }
    }
-   
-   
+
+
    // Function to update global file with the latest build data
    def updateGlobalFile(String selectedCategory) {
       def globalFile = new File(env.GLOBAL_FILE_PATH)
-      def buildData = "Build #${env.BUILD_NUMBER}, Category: ${selectedCategory}"
+      //Fetching the build url
+      echo "Fetching current build url"
+      def currentBuildLink = getCurrentBuildLink()
+      echo "currentBuildLink link is : ${currentBuildLink}"
+   
+       def buildData = "Build #${env.BUILD_NUMBER}, Category: ${selectedCategory}, Link: ${currentBuildLink}"
    
        // Create the file if it doesn't exist
        if (!globalFile.exists()) {
@@ -86,6 +91,13 @@ depends on previous steps i.e. https://engineering.beescloud.com/docs/engineerin
        echo "Global file updated with latest build data"
    }
    
+   def getCurrentBuildLink() {
+      def jenkinsUrl = env.JENKINS_URL
+      def jobName = java.net.URLEncoder.encode(env.JOB_NAME, "UTF-8").replace("+", "%20")
+      def buildNumber = env.BUILD_NUMBER
+      return "${jenkinsUrl}job/${jobName}/${buildNumber}/"
+   }
+   
 
    ```
 2. Run the pipeline
@@ -100,6 +112,8 @@ Solution: Whenever there is approval error go to the Dashboard -> Manage Jenkins
 solution: https://stackoverflow.com/questions/37388837/java-io-notserializableexception-hudson-model-freestyleproject
 Basically, since pipeline was getting the paused for input, it was trying to serialize the object which was not serializable. Hence, before I reference I set the variable to null.
 
+### Level9
+This thread https://community.jenkins.io/t/fetch-real-time-pipeline-status-data-from-jenkins has more details like there are various ways to fetch the build details
 
 ## Contributing
 
