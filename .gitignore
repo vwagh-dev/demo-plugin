@@ -13,3 +13,5 @@ work
 .settings
 .classpath
 .project
+/.vscode/settings.json
+/.vscode/launch.json
