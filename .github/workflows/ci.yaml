@@ -8,6 +8,10 @@ on:
   pull_request:
     branches:
       - main
+    types:
+      - opened
+      - edited
+      - synchronize
 
 
 jobs:
@@ -28,3 +32,8 @@ jobs:
       # Install dependencies
       - name: Install dependencies
         run: npm install
+
+      # Update the PR description
+      - name: Update PR Description
+        run: |
+          gh pr edit ${{ github.event.pull_request.number }} --body "### Updated PR Description\n\nThis description was updated using GitHub Actions.\n\n- Item 1\n- Item 2"
